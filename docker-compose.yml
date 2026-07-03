@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: rag_postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: ragdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: antigravity_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d ragdb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: rag_fastapi_backend
+    restart: always
+    environment:
+      PORT: 8000
+      HOST: 0.0.0.0
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://postgres:antigravity_secure_password@db:5432/ragdb
+      SECRET_KEY: antigravity-rag-secret-key-2024-super-secure-do-not-share
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      UPLOAD_DIR: ./uploads
+      CHROMA_DIR: ./chromadb_store
+      EMBEDDING_PROVIDER: openai
+      OPENAI_API_KEY: ""
+      GEMINI_API_KEY: "" # Fill in your key or pass via shell environment
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/workspace/backend/uploads
+      - chroma_data:/workspace/backend/chromadb_store
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: rag_nginx_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+    driver: local
+  uploads_data:
+    driver: local
+  chroma_data:
+    driver: local
