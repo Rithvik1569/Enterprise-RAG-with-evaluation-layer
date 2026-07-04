@@ -1,0 +1,5 @@
+Antigravity RAG System
+The Antigravity system uses MongoDB Atlas as its primary database.
+It evaluates responses using Faithfulness, Answer Relevance, Context Precision, and Context Recall.
+The default embedding model is Gemini.
+This document is used for testing the frontend and backend integration.

@@ -1,48 +1,64 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, Integer, String, Text, BigInteger
-from sqlalchemy.orm import Mapped, mapped_column
-from app.database import Base
+from pydantic import BaseModel, Field
 
 
-class Document(Base):
-    """SQLAlchemy model for document metadata."""
+class DocumentResponse(BaseModel):
+    """Pydantic model representing a Document's metadata response."""
+    id: str
+    filename: str
+    file_path: str
+    file_type: str
+    size: int
+    checksum: str
+    upload_date: datetime
+    processing_status: str
+    chunk_count: int
+    error_message: str | None
+    created_at: datetime
+    updated_at: datetime
 
-    __tablename__ = "documents"
+    class Config:
+        from_attributes = True
 
-    id: Mapped[str] = mapped_column(
-        String(36),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),
-    )
-    filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_path: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_type: Mapped[str] = mapped_column(String(10), nullable=False)
-    size: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    checksum: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
-    upload_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-    processing_status: Mapped[str] = mapped_column(
-        String(20),
-        default="pending",  # pending, processing, completed, failed
-        nullable=False,
-    )
-    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
+class DocumentInDB(BaseModel):
+    """Pydantic model representing a Document record in the database."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id")
+    filename: str
+    file_path: str
+    file_type: str
+    size: int
+    checksum: str
+    upload_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    processing_status: str
+    chunk_count: int = 0
+    error_message: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    def __repr__(self) -> str:
-        return f"<Document id={self.id} filename={self.filename} status={self.processing_status}>"
+class ReprocessRequest(BaseModel):
+    """Pydantic model to customize chunking parameters during document reprocessing."""
+    chunk_size: int = Field(default=1000, ge=100, le=10000, description="Size of text chunks in characters")
+    chunk_overlap: int = Field(default=200, ge=0, le=5000, description="Overlapping characters between adjacent chunks")
+
+
+class RetrievalRequest(BaseModel):
+    """Pydantic model representing a similarity search query."""
+    query: str = Field(..., min_length=1, description="The query string to search for")
+    top_k: int = Field(default=4, ge=1, le=50, description="Number of results to return")
+    document_id: str | None = Field(default=None, description="Optional document ID to restrict the search to")
+
+
+class RetrievalChunk(BaseModel):
+    """Pydantic model representing a single matched text segment from the vector store."""
+    text: str
+    document_id: str
+    filename: str
+    score: float
+    chunk_index: int
+
+
+class RetrievalResponse(BaseModel):
+    """Pydantic model representing the overall retrieval results."""
+    query: str
+    results: list[RetrievalChunk]

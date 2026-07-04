@@ -1,21 +1,34 @@
-Write-Host "Starting Antigravity RAG SaaS System..." -ForegroundColor Cyan
+Write-Host "Starting Antigravity RAG SaaS System Globally..." -ForegroundColor Cyan
+
+# The backend now requires MongoDB. Since Docker is not installed, it will use the MONGODB_URL in backend/.env
+Write-Host "NOTE: Make sure your MongoDB Atlas URL is set in backend/.env!" -ForegroundColor Yellow
 
 # Check if port 8000 is occupied
-$port8000 = Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
+$port8000 = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
 if ($port8000) {
     Write-Host "Warning: Port 8000 (Backend) is already in use." -ForegroundColor Yellow
 } else {
     Write-Host "Launching Backend on Port 8000 in a new window..." -ForegroundColor Green
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd backend; .venv\Scripts\Activate.ps1; python -m uvicorn app.main:app --host 127.0.0.1 --port 8000"
+    Start-Process -FilePath ".\backend\.venv\Scripts\python.exe" -WorkingDirectory ".\backend" -ArgumentList "-m uvicorn app.main:app --host 0.0.0.0 --port 8000"
 }
 
 # Check if port 5173 is occupied
-$port5173 = Get-NetTCPConnection -LocalPort 5173 -ErrorAction SilentlyContinue
+$port5173 = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue
 if ($port5173) {
     Write-Host "Warning: Port 5173 (Frontend) is already in use." -ForegroundColor Yellow
 } else {
     Write-Host "Launching Frontend on Port 5173 in a new window..." -ForegroundColor Green
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd frontend; npm run dev"
+    Start-Process -FilePath "npm.cmd" -WorkingDirectory ".\frontend" -ArgumentList "run dev"
 }
 
-Write-Host "Done! The frontend should be accessible at http://localhost:5173" -ForegroundColor Cyan
+# Fetch the local IP addresses to give the user the global network links
+$ipAddresses = (Get-NetIPAddress -AddressFamily IPv4 -Type Unicast | Where-Object { $_.IPAddress -ne "127.0.0.1" }).IPAddress
+
+Write-Host "Done! The application is running globally on your network." -ForegroundColor Cyan
+Write-Host "You can access the frontend from any device on your Wi-Fi at:" -ForegroundColor White
+foreach ($ip in $ipAddresses) {
+    Write-Host "👉 http://${ip}:5173" -ForegroundColor Green
+}
+if ($ipAddresses.Count -gt 0) {
+    Write-Host "(Your backend API docs are hosted at http://$($ipAddresses[0]):8000/docs)" -ForegroundColor Gray
+}

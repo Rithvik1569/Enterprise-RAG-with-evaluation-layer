@@ -4,9 +4,9 @@ pydantic>=2.0
 pydantic-settings>=2.0
 python-dotenv>=1.0.0
 
-# Database (SQLite via aiosqlite — no server required)
-sqlalchemy>=2.0.0
-aiosqlite>=0.19.0
+# Database (MongoDB)
+motor>=3.3.0
+pymongo>=4.6.0
 
 # Auth
 python-jose[cryptography]>=3.3.0
@@ -14,17 +14,18 @@ passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.9
 email-validator>=2.0.0
 
-# PostgreSQL driver
-asyncpg>=0.29.0
-
 # RAG & Document Processing
 chromadb>=0.4.0
 langchain>=0.1.0
 langchain-community>=0.0.10
-langchain-openai>=0.0.2
+langchain-google-genai>=1.0.0
 langchain-text-splitters>=0.0.1
 pypdf>=4.0.0
 python-docx>=1.1.0
-alembic>=1.13.0
+
+# Evaluation
+ragas>=0.1.0
+datasets>=2.15.0
 nest-asyncio>=1.6.0
-langchain-google-genai>=1.0.0
+
+google-api-core>=2.0.0

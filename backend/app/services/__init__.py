@@ -1,9 +1,9 @@
-from app.services.text_extractor import TextExtractor
-from app.services.text_cleaner import TextCleaner
-from app.services.document_processor import DocumentProcessor
-from app.services.retrieval_service import RetrievalService
-from app.services.llm_service import LLMService
-from app.services.evaluation_service import EvaluationService
+from app.services.rag_service import TextExtractor
+from app.services.rag_service import TextCleaner
+from app.services.rag_service import DocumentProcessor
+from app.services.rag_service import RetrievalService
+from app.services.rag_service import LLMService
+from app.evaluation.ragas_eval import EvaluationService
 
 __all__ = [
     "TextExtractor",

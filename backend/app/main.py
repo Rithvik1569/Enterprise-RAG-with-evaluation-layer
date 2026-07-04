@@ -2,20 +2,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from app.config import settings
-from app.database import create_tables
-from app.routers import auth as auth_router
-from app.routers import admin as admin_router
-from app.routers import documents as documents_router
-from app.routers import retrieval as retrieval_router
-from app.routers import chat as chat_router
+from app.config.settings import settings
+from app.database.mongo import connect_to_mongo, close_mongo_connection
+from app.routes import auth as auth_router
+from app.routes import admin as admin_router
+from app.routes import documents as documents_router
+from app.routes import retrieval as retrieval_router
+from app.routes import chat as chat_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create DB tables. Shutdown: nothing needed (engine cleans up)."""
-    await create_tables()
+    """Startup: connect to MongoDB. Shutdown: close connection."""
+    await connect_to_mongo()
     yield
+    await close_mongo_connection()
 
 
 app = FastAPI(

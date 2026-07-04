@@ -2,20 +2,20 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:15-alpine
-    container_name: rag_postgres_db
+    image: mongo:6.0
+    container_name: rag_mongo_db
     restart: always
     environment:
-      POSTGRES_DB: ragdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: antigravity_secure_password
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: antigravity_secure_password
+      MONGO_INITDB_DATABASE: ragdb
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mongodata:/data/db
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d ragdb" ]
-      interval: 5s
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -28,15 +28,15 @@ services:
       PORT: 8000
       HOST: 0.0.0.0
       ENVIRONMENT: production
-      DATABASE_URL: postgresql+asyncpg://postgres:antigravity_secure_password@db:5432/ragdb
+      MONGODB_URL: mongodb://admin:antigravity_secure_password@db:27017
+      DATABASE_NAME: ragdb
       SECRET_KEY: antigravity-rag-secret-key-2024-super-secure-do-not-share
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       UPLOAD_DIR: ./uploads
       CHROMA_DIR: ./chromadb_store
-      EMBEDDING_PROVIDER: openai
-      OPENAI_API_KEY: ""
-      GEMINI_API_KEY: "" # Fill in your key or pass via shell environment
+      EMBEDDING_PROVIDER: google
+      GEMINI_API_KEY: ""
     ports:
       - "8000:8000"
     volumes:
@@ -57,7 +57,7 @@ services:
       - backend
 
 volumes:
-  pgdata:
+  mongodata:
     driver: local
   uploads_data:
     driver: local
