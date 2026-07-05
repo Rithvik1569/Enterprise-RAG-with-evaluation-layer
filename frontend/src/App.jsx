@@ -48,27 +48,48 @@ export default function App() {
   // On mount — rehydrate user from stored token
   // ------------------------------------------------------------------
   useEffect(() => {
-    const stored = localStorage.getItem('rag_token');
-    if (!stored) {
-      setLoading(false);
-      return;
-    }
+    let isMounted = true;
 
-    axios.get('/api/auth/me', {
-      headers: { Authorization: `Bearer ${stored}` },
-    })
-      .then(r => {
+    const initializeApp = async () => {
+      // 1. Wait for backend to be healthy
+      let backendUp = false;
+      while (!backendUp && isMounted) {
+        try {
+          await axios.get('/api/health', { timeout: 2000 });
+          backendUp = true;
+        } catch (e) {
+          // Wait 1s and retry if backend is still booting
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+
+      if (!isMounted) return;
+
+      // 2. Once backend is up, check auth if token exists
+      const stored = localStorage.getItem('rag_token');
+      if (!stored) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const r = await axios.get('/api/auth/me', {
+          headers: { Authorization: `Bearer ${stored}` },
+        });
         setToken(stored);
         setUser(r.data);
-      })
-      .catch(() => {
+      } catch (err) {
         localStorage.removeItem('rag_token');
         setToken(null);
         setUser(null);
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    initializeApp();
+
+    return () => { isMounted = false; };
   }, []);
 
   // ------------------------------------------------------------------
@@ -627,7 +648,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.faithfulness >= 0.8 ? 'text-emerald-400' : msg.evaluation.faithfulness >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.faithfulness * 100).toFixed(0)}%
+                                        {(msg.evaluation.faithfulness * 100).toFixed(2)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -647,7 +668,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.answer_relevance >= 0.8 ? 'text-emerald-400' : msg.evaluation.answer_relevance >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.answer_relevance * 100).toFixed(0)}%
+                                        {(msg.evaluation.answer_relevance * 100).toFixed(2)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -667,7 +688,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.context_precision >= 0.8 ? 'text-emerald-400' : msg.evaluation.context_precision >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.context_precision * 100).toFixed(0)}%
+                                        {(msg.evaluation.context_precision * 100).toFixed(2)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -687,7 +708,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.context_recall >= 0.8 ? 'text-emerald-400' : msg.evaluation.context_recall >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.context_recall * 100).toFixed(0)}%
+                                        {(msg.evaluation.context_recall * 100).toFixed(2)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">

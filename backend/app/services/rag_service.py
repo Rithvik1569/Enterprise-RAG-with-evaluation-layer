@@ -210,7 +210,7 @@ class DocumentProcessor:
 import logging
 from app.config.settings import settings
 from app.models.document import RetrievalChunk
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 import google.api_core.exceptions
 
@@ -218,16 +218,23 @@ logger = logging.getLogger("rag_pipeline")
 
 
 class LLMService:
-    """Service to interact with Gemini LLM."""
+    """Service to interact with Groq LLM."""
 
     def __init__(self):
         self.gemini_key = settings.GEMINI_API_KEY
         self.openai_key = None # Removed
-        self.groq_key = None # Removed
+        self.groq_key = settings.GROQ_API_KEY
 
-        if self.gemini_key:
+        if self.groq_key:
+            self.llm = ChatGroq(
+                model="llama-3.1-8b-instant",
+                api_key=self.groq_key,
+                temperature=0.2,
+                max_tokens=800
+            )
+        elif self.gemini_key:
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash",
+                model="gemini-1.5-flash",
                 google_api_key=self.gemini_key,
                 temperature=0.2,
                 max_tokens=800
@@ -292,8 +299,12 @@ class LLMService:
         """Generates a mock response simulating LLM behavior based on retrieved chunks."""
         if not chunks:
             return (
-                "ðŸ‘‹ Hello! I am running in development fallback mode. I searched the database but found no relevant document chunks. "
-                "Please upload a document to the Knowledge Base first so I can find matching information to answer your question!"
+                "⚙️ **[Development Fallback Mode]**\n\n"
+                "I am running in development fallback mode because the Gemini API is currently unavailable or rate-limited.\n\n"
+                f"You asked: {query}\n\n"
+                "Since no relevant documents were found, I would normally answer from general knowledge here. "
+                "However, as an offline mock, I cannot generate new text. "
+                "Please check your `.env` API keys and Quota limits to restore full AI capabilities!"
             )
 
         citations_list = [f"**{c.filename}** (Chunk {c.chunk_index}, relevance score: {c.score:.4f})" for c in chunks]
