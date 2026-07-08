@@ -14,17 +14,31 @@ def get_db():
     """Returns the MongoDB database instance."""
     return db.db
 
+import certifi
+
 async def connect_to_mongo():
     logger.info("Connecting to MongoDB...")
-    db.client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
-    db.db = db.client[settings.DATABASE_NAME]
-    logger.info("Connected to MongoDB!")
+    try:
+        db.client = motor.motor_asyncio.AsyncIOMotorClient(
+            settings.MONGODB_URL,
+            serverSelectionTimeoutMS=5000,
+            tlsAllowInvalidCertificates=True
+        )
+        # Attempt a ping to verify connection
+        await db.client.admin.command('ping')
+        db.db = db.client[settings.DATABASE_NAME]
+        logger.info("Connected to MongoDB!")
 
-    # Ensure indexes (e.g., unique email and username)
-    await db.db["users"].create_index("email", unique=True)
-    await db.db["users"].create_index("username", unique=True)
-    await db.db["documents"].create_index("filename")
-    await db.db["evaluations"].create_index("document_id")
+        # Ensure indexes (e.g., unique email and username)
+        await db.db["users"].create_index("email", unique=True)
+        await db.db["users"].create_index("username", unique=True)
+        await db.db["documents"].create_index("filename")
+        await db.db["evaluations"].create_index("document_id")
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        logger.error("Backend will start, but database operations will fail.")
+        db.client = None
+        db.db = None
 
 async def close_mongo_connection():
     logger.info("Closing MongoDB connection...")

@@ -1,6 +1,6 @@
-# Antigravity Enterprise RAG SaaS System
+# Enterprise RAG SaaS System
 
-Antigravity is a production-ready, enterprise-grade Retrieval-Augmented Generation (RAG) SaaS platform. It combines real-time grounding search with an automated evaluation layer (faithfulness, relevance, precision, recall) and a modern admin analytics suite.
+Enterprise RAG is a production-ready, enterprise-grade Retrieval-Augmented Generation (RAG) SaaS platform. It combines real-time grounding search with an automated evaluation layer (faithfulness, relevance, precision, recall) and a modern admin analytics suite.
 
 ---
 
@@ -81,7 +81,7 @@ Final AI project/
    HOST=0.0.0.0
    ENVIRONMENT=development
    DATABASE_URL=sqlite+aiosqlite:///./ragdb.sqlite
-   SECRET_KEY=antigravity-rag-secret-key-2024-super-secure-do-not-share
+   SECRET_KEY=enterprise-rag-secret-key-2024-super-secure-do-not-share
    ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=30
    EMBEDDING_PROVIDER=openai

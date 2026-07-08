@@ -87,7 +87,7 @@ export default function AuthPage({ onAuthSuccess }) {
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent tracking-tight">
-              Antigravity
+              Enterprise RAG
             </h1>
             <p className="text-xs text-slate-500 font-medium">RAG Evaluation Console</p>
           </div>

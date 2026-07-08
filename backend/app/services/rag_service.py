@@ -213,6 +213,7 @@ from app.models.document import RetrievalChunk
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 import google.api_core.exceptions
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 logger = logging.getLogger("rag_pipeline")
 
@@ -270,7 +271,7 @@ class LLMService:
         try:
             logger.info("Generating response using Gemini API...")
             messages = [
-                SystemMessage(content="You are a helpful and precise RAG assistant. First, try to answer the user's question using the provided document context below. If the context contains the answer, refer to the sources where appropriate (e.g., [Source 1], [Source 2]). If the context does not contain the answer, answer to the best of your knowledge like ChatGPT, but clearly state that your answer is based on general knowledge and not found in the provided documents."),
+                SystemMessage(content="You are a highly capable AI assistant. First, try to answer the user's question using the provided DOCUMENT CONTEXT. If you use the context, cite the sources (e.g., [Source 1]). If the context does NOT contain the answer, ignore the context completely and provide a perfect, helpful answer from your general knowledge (but briefly note that it's from general knowledge)."),
                 HumanMessage(content=prompt)
             ]
             response = await self.llm.ainvoke(messages)

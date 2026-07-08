@@ -45,10 +45,16 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Health Check
 # ---------------------------------------------------------------------------
+from app.database.mongo import db
+
 @app.get("/api/health")
 async def health():
+    status = "healthy"
+    if db.client is None:
+        status = "degraded (database offline)"
+
     return {
-        "status": "healthy",
+        "status": status,
         "environment": settings.ENVIRONMENT,
         "backend": "FastAPI",
         "version": "0.2.0"

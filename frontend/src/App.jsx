@@ -47,22 +47,12 @@ export default function App() {
   // ------------------------------------------------------------------
   // On mount — rehydrate user from stored token
   // ------------------------------------------------------------------
+  const [appError, setAppError] = useState(null);
+
   useEffect(() => {
     let isMounted = true;
 
     const initializeApp = async () => {
-      // 1. Wait for backend to be healthy
-      let backendUp = false;
-      while (!backendUp && isMounted) {
-        try {
-          await axios.get('/api/health', { timeout: 2000 });
-          backendUp = true;
-        } catch (e) {
-          // Wait 1s and retry if backend is still booting
-          await new Promise(r => setTimeout(r, 1000));
-        }
-      }
-
       if (!isMounted) return;
 
       // 2. Once backend is up, check auth if token exists
@@ -79,9 +69,16 @@ export default function App() {
         setToken(stored);
         setUser(r.data);
       } catch (err) {
-        localStorage.removeItem('rag_token');
-        setToken(null);
-        setUser(null);
+        // Only log out if it's explicitly an unauthorized error (401), not network error.
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('rag_token');
+          setToken(null);
+          setUser(null);
+        } else {
+          // If backend is still starting, keep the token and let them into the UI instantly.
+          setToken(stored);
+          setUser({ username: 'Loading...', role: 'user' });
+        }
       } finally {
         setLoading(false);
       }
@@ -301,8 +298,32 @@ export default function App() {
   };
 
   // ------------------------------------------------------------------
-  // Gate: Loading state or show auth page if not logged in
+  // Gate: Error state, Loading state, or Auth page
   // ------------------------------------------------------------------
+  if (appError) {
+    return (
+      <div className="min-h-screen bg-[#0b0c10] flex items-center justify-center text-slate-400 font-sans p-6">
+        <div className="max-w-md w-full bg-slate-900/50 border border-slate-800/80 rounded-2xl p-8 shadow-2xl backdrop-blur-sm text-center space-y-6">
+          <div className="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 text-3xl shadow-inner shadow-rose-500/20">
+            {appError.type === 'critical' ? '⚠️' : '🔌'}
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-slate-100 tracking-tight">{appError.title}</h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              {appError.message}
+            </p>
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition active:scale-[0.98] border border-slate-700/50 hover:border-slate-600/50 shadow-lg cursor-pointer"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b0c10] flex items-center justify-center text-slate-400 font-medium">
@@ -342,7 +363,7 @@ export default function App() {
           </div>
           <div>
             <h2 className="font-bold text-base tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-              Antigravity
+              Enterprise RAG
             </h2>
             <p className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">RAG Engine v0.5</p>
           </div>
@@ -802,7 +823,7 @@ export default function App() {
                   </button>
                 </form>
                 <p className="text-[10px] text-slate-600 text-center mt-2.5">
-                  Powered by Antigravity RAG Evaluation Platform. All queries undergo automated faithfulness check.
+                  Powered by Enterprise RAG Evaluation Platform. All queries undergo automated faithfulness check.
                 </p>
               </div>
             </div>
