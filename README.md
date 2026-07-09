@@ -6,13 +6,13 @@ Enterprise RAG is a production-ready, enterprise-grade Retrieval-Augmented Gener
 
 ## Technical Stack & Architecture
 
-- **Frontend**: React (v19) + TypeScript + Vite + Tailwind CSS (v4)
+- **Frontend**: React (v19) + JavaScript + Vite + Tailwind CSS (v4)
 - **Backend**: FastAPI + Python (3.10+)
 - **Database**: MongoDB (Production & Development)
 - **Vector Database**: ChromaDB (for high-dimensional vector embeddings)
 - **Evaluation Engine**: Parallel prompt evaluations modeled after DeepEval & Ragas definitions, powered by Groq (Llama 3.1) and Google Gemini for strict zero-hallucination tracking.
 - **LLM / Embedding**: Google Gemini (`models/gemini-embedding-001` or similar), optionally OpenAI.
-- **Deployment**: Docker + Docker Compose + Nginx proxying
+- **Deployment**: Vercel (Frontend) and Render (Backend API)
 
 ---
 
@@ -110,22 +110,24 @@ Final AI project/
 
 ---
 
-## Production Deployment — Docker Compose
+## Production Deployment
 
-To deploy the entire multi-container architecture in production, run the following:
+This project is configured to be easily deployed using modern cloud platforms:
 
-1. Clone or open the project folder in your terminal.
-2. Edit `docker-compose.yml` to supply your `MONGODB_URL`, `GROQ_API_KEY`, and `GEMINI_API_KEY` environment variables for live generation and evaluation.
-3. Build and launch all services:
-   ```bash
-   docker-compose up --build -d
-   ```
-4. Once completed:
-   - **Frontend App**: Accessible at `http://localhost` (Port 80)
-   - **Backend API**: Reverse proxied to `http://localhost/api` (Internal Port 8000)
+### 1. Backend Deployment (Render)
+1. Push your repository to GitHub.
+2. Go to [Render.com](https://render.com) and create a new **Web Service**.
+3. Connect your GitHub repository and select the `backend` folder as the Root Directory.
+4. Set the Build Command to `pip install -r requirements.txt`.
+5. Set the Start Command to `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+6. Add all the environment variables from your `.env` file (e.g., `MONGODB_URL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, etc.) in the Render dashboard.
 
-To shutdown the system:
-```bash
-docker-compose down
-```
-All documents and vector records are persisted according to your defined named volumes and remote MongoDB cluster settings.
+### 2. Frontend Deployment (Vercel)
+1. Go to [Vercel.com](https://vercel.com) and create a new **Project**.
+2. Import your GitHub repository.
+3. Set the Framework Preset to **Vite**.
+4. Set the Root Directory to `frontend`.
+5. Add any required frontend environment variables (like your newly deployed Render Backend API URL, e.g. `VITE_API_URL=https://your-backend.onrender.com`).
+6. Click **Deploy**.
+
+Your application will now be fully live, with the frontend hosted on Vercel and the backend reliably running on Render.
