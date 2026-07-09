@@ -12,7 +12,22 @@ if ($port8000) {
 }
 Write-Host "Launching Backend on Port 8000 in a new window..." -ForegroundColor Green
 $BackendDir = Resolve-Path ".\backend"
-Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "cd '$($BackendDir.Path)'; & '.\.venv\Scripts\python.exe' -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+Start-Process -FilePath "powershell.exe" -ArgumentList "-NoExit", "-Command", "cd '$($BackendDir.Path)'; & '.\.venv\Scripts\python.exe' -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir ."
+
+Write-Host "Waiting for Backend to become ready..." -ForegroundColor Yellow
+$retryCount = 0
+while ($retryCount -lt 40) {
+    $tcp = [System.Net.Sockets.TcpClient]::new()
+    try {
+        $tcp.Connect("127.0.0.1", 8000)
+        $tcp.Close()
+        Write-Host "Backend is online!" -ForegroundColor Green
+        break
+    } catch {
+        Start-Sleep -Milliseconds 500
+        $retryCount++
+    }
+}
 
 # Check if port 5173 is occupied and kill it
 $port5173 = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue

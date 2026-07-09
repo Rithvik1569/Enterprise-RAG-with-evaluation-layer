@@ -15,14 +15,8 @@ logger = logging.getLogger("rag_pipeline")
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
-async def run_evaluation_and_save_background(req_message: str, answer: str, chunks: list, llm_service_gemini_key: str, llm_service_openai_key: str, db):
-    evaluation_service = EvaluationService()
+async def run_evaluation_and_save_background(req_message: str, answer: str, chunks: list, llm_service_gemini_key: str, llm_service_openai_key: str, eval_data: dict, db):
     try:
-        eval_data = await evaluation_service.evaluate(
-            query=req_message,
-            answer=answer,
-            chunks=chunks,
-        )
         overall_score = round(
             (
                 eval_data["faithfulness"]
@@ -120,7 +114,27 @@ async def chat(
     end_generation_time = time.perf_counter()
     generation_latency = round(end_generation_time - start_time, 4)
 
-    # 3. Schedule Background Evaluation
+    # 3. Run Evaluation Inline to return real metrics to UI
+    eval_service = EvaluationService()
+    try:
+        eval_data = await eval_service.evaluate(
+            query=req.message,
+            answer=answer,
+            chunks=chunks,
+        )
+    except Exception as e:
+        logger.error(f"Inline evaluation failed: {e}")
+        has_chunks = len(chunks) > 0
+        eval_data = {
+            "faithfulness": 0.0,
+            "answer_relevance": 0.0,
+            "context_precision": 0.0,
+            "context_recall": 0.0,
+            "latency_ms": 0.0,
+            "framework": "Failed Fallback"
+        }
+
+    # 4. Schedule Background DB Save
     background_tasks.add_task(
         run_evaluation_and_save_background,
         req.message,
@@ -128,17 +142,16 @@ async def chat(
         chunks,
         llm_service.gemini_key,
         llm_service.openai_key,
+        eval_data,
         db
     )
 
-    # 4. Return quick mock metrics to the UI immediately
-    has_chunks = len(chunks) > 0
     evaluation_metrics = EvaluationMetrics(
-        faithfulness=0.92 if has_chunks else 1.0,
-        answer_relevance=0.85 if has_chunks else 0.40,
-        context_precision=0.88 if has_chunks else 0.0,
-        context_recall=0.90 if has_chunks else 0.0,
-        latency_ms=round(generation_latency * 1000, 2),
+        faithfulness=eval_data["faithfulness"],
+        answer_relevance=eval_data["answer_relevance"],
+        context_precision=eval_data["context_precision"],
+        context_recall=eval_data["context_recall"],
+        latency_ms=eval_data["latency_ms"],
     )
 
     return ChatResponse(

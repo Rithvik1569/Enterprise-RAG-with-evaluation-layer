@@ -54,32 +54,52 @@ class EvaluationService:
         """Performs evaluation using Ragas."""
         start_time = time.perf_counter()
 
-        # If we are in mock mode (no API keys configured), return high-quality mock scores
-        if not self.llm:
-            logger.info("No active LLM API keys. Returning mock evaluation scores.")
+        if not self.llm or not chunks:
+            logger.info("No active LLM or no chunks. Returning mock evaluation scores.")
             has_chunks = len(chunks) > 0
-            faithfulness = 0.92 if has_chunks else 1.0
-            relevance = 0.85 if has_chunks else 0.40
-            precision = 0.88 if has_chunks else 0.0
-            recall = 0.90 if has_chunks else 0.0
-            
-            end_time = time.perf_counter()
             return {
-                "faithfulness": faithfulness,
-                "answer_relevance": relevance,
-                "context_precision": precision,
-                "context_recall": recall,
-                "latency_ms": round((end_time - start_time) * 1000, 2),
-                "framework": "Ragas (Sim)"
+                "faithfulness": 0.0,
+                "answer_relevance": 0.0,
+                "context_precision": 0.0,
+                "context_recall": 0.0,
+                "latency_ms": round((time.perf_counter() - start_time) * 1000, 2),
+                "framework": "Simulated"
             }
 
-        # Bypassing Ragas evaluation to save API rate limits for the main chat
-        logger.info("Bypassing Ragas evaluation to preserve API rate limits. Returning simulated evaluation scores.")
-        has_chunks = len(chunks) > 0
-        f_score = 0.92 if has_chunks else 1.0
-        ar_score = 0.85 if has_chunks else 0.40
-        cp_score = 0.88 if has_chunks else 0.0
-        cr_score = 0.90 if has_chunks else 0.0
+        contexts = "\n\n".join([f"[{i+1}] {c.text}" for i, c in enumerate(chunks)])
+        prompt = f"""
+You are an expert AI evaluator assessing a RAG (Retrieval-Augmented Generation) system.
+You MUST calculate exactly correct metrics for the given query, context, and answer. 
+Be absolutely strict and precise. Output a JSON object with exactly these four keys, each having a float value between 0.0 and 1.0:
+
+- "faithfulness": Checks if the answer is completely supported by the retrieved context. If the answer contains ANY information (even if factually correct in the real world) that is NOT explicitly in the context, this score MUST be 0.0 or proportionally low.
+- "answer_relevance": Checks whether the answer directly answers the user's question. If it answers the question, it is 1.0. If it evades or says it cannot answer, it is 0.0.
+- "context_precision": Measures if the retrieved documents are relevant to the question. If the context is completely unrelated to the question, this MUST be 0.0.
+- "context_recall": Measures if the retriever found all necessary information. If the context lacks the information needed to answer the question, this MUST be 0.0.
+
+Question: {query}
+Context: {contexts}
+Answer: {answer}
+
+Output ONLY valid JSON. No markdown formatting or extra text.
+"""
+        import json
+        from langchain_core.messages import HumanMessage
+
+        try:
+            logger.info("Running live LLM evaluation...")
+            response = await self.llm.ainvoke([HumanMessage(content=prompt)])
+            content = response.content.replace("```json", "").replace("```", "").strip()
+            scores = json.loads(content)
+            f_score = float(scores.get("faithfulness", 0.0))
+            ar_score = float(scores.get("answer_relevance", 0.0))
+            cp_score = float(scores.get("context_precision", 0.0))
+            cr_score = float(scores.get("context_recall", 0.0))
+            framework = "Live LLM Eval"
+        except Exception as e:
+            logger.error(f"Live eval failed: {e}")
+            f_score, ar_score, cp_score, cr_score = 0.0, 0.0, 0.0, 0.0
+            framework = "Simulated Fallback"
 
         end_time = time.perf_counter()
         latency_ms = round((end_time - start_time) * 1000, 2)
@@ -90,5 +110,5 @@ class EvaluationService:
             "context_precision": max(0.0, min(1.0, cp_score)),
             "context_recall": max(0.0, min(1.0, cr_score)),
             "latency_ms": latency_ms,
-            "framework": "Ragas"
+            "framework": framework
         }

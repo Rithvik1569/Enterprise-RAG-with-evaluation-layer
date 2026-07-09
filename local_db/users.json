@@ -1,0 +1,12 @@
+[
+  {
+    "email": "testuser@example.com",
+    "username": "testuser",
+    "role": "user",
+    "is_active": true,
+    "_id": "941304a9-ebc3-4dff-bdd8-881a709a10b7",
+    "hashed_password": "$2b$12$zAMjTZ.rqFQeD0JE.DvaMeGfxzf2SpI47F3TSa8fJPkP2hJRViNwK",
+    "created_at": "2026-07-09T06:53:09.246978Z",
+    "updated_at": "2026-07-09T06:53:09.246984Z"
+  }
+]

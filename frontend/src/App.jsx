@@ -635,7 +635,7 @@ export default function App() {
                           ? 'bg-slate-900/60 border-slate-800 text-slate-100 rounded-tr-none' 
                           : 'bg-slate-950/30 border-slate-900/80 text-slate-200 rounded-tl-none'
                       }`}>
-                        <div className="white-space-pre-wrap font-medium">
+                        <div className="whitespace-pre-wrap font-medium">
                           {msg.text}
                         </div>
 
@@ -669,7 +669,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.faithfulness >= 0.8 ? 'text-emerald-400' : msg.evaluation.faithfulness >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.faithfulness * 100).toFixed(2)}%
+                                        {(msg.evaluation.faithfulness * 100).toFixed(0)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -689,7 +689,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.answer_relevance >= 0.8 ? 'text-emerald-400' : msg.evaluation.answer_relevance >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.answer_relevance * 100).toFixed(2)}%
+                                        {(msg.evaluation.answer_relevance * 100).toFixed(0)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -709,7 +709,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.context_precision >= 0.8 ? 'text-emerald-400' : msg.evaluation.context_precision >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.context_precision * 100).toFixed(2)}%
+                                        {(msg.evaluation.context_precision * 100).toFixed(0)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -729,7 +729,7 @@ export default function App() {
                                       <span className={`font-bold ${
                                         msg.evaluation.context_recall >= 0.8 ? 'text-emerald-400' : msg.evaluation.context_recall >= 0.5 ? 'text-amber-400' : 'text-rose-400'
                                       }`}>
-                                        {(msg.evaluation.context_recall * 100).toFixed(2)}%
+                                        {(msg.evaluation.context_recall * 100).toFixed(0)}%
                                       </span>
                                     </div>
                                     <div className="h-1 bg-slate-950 rounded-full overflow-hidden">
@@ -884,7 +884,7 @@ export default function App() {
                     <div className="bg-slate-950/60 border border-slate-900 p-5 rounded-2xl space-y-1">
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Faithfulness</p>
                       <p className="text-3xl font-bold font-display text-emerald-400">
-                        {(analyticsData.summary.avg_faithfulness * 100).toFixed(1)}%
+                        {(analyticsData.summary.avg_faithfulness * 100).toFixed(0)}%
                       </p>
                       <p className="text-[10px] text-slate-600">Avg grounding accuracy</p>
                     </div>
@@ -893,7 +893,7 @@ export default function App() {
                     <div className="bg-slate-950/60 border border-slate-900 p-5 rounded-2xl space-y-1">
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hallucination Rate</p>
                       <p className="text-3xl font-bold font-display text-rose-400">
-                        {(analyticsData.summary.hallucination_rate * 100).toFixed(1)}%
+                        {(analyticsData.summary.hallucination_rate * 100).toFixed(0)}%
                       </p>
                       <p className="text-[10px] text-slate-600">Faithfulness &lt; 80%</p>
                     </div>

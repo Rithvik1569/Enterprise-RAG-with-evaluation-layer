@@ -45,7 +45,7 @@ Final AI project/
 ## Features
 
 1. **Document Grounding**: Restrict context search to a single document or query all uploaded materials.
-2. **Evaluation Metrics**: Faithfulness, Answer Relevance, Context Precision, Context Recall, and Latency are evaluated concurrently using `asyncio.gather` for minimal overhead.
+2. **Evaluation Metrics**: Faithfulness, Answer Relevance, Context Precision, Context Recall, and Latency are evaluated concurrently using `asyncio.gather` for minimal overhead. Evaluator rules strictly calculate exact percentage metrics for zero-hallucination tracking.
 3. **Admin Analytics Dashboard**: Custom interactive SVG charts (Line & Area) reporting request trends, average latency curves, hallucination percentage, and evaluation log details.
 4. **Persistent Volumes**: Named Local Docker mounts preserve vector indices, database records, and upload files.
 
