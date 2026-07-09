@@ -1,17 +1,28 @@
 # Enterprise RAG SaaS System
 
-Enterprise RAG is a production-ready, enterprise-grade Retrieval-Augmented Generation (RAG) SaaS platform. It combines real-time grounding search with an automated evaluation layer (faithfulness, relevance, precision, recall) and a modern admin analytics suite.
+Enterprise RAG is a production-ready, enterprise-grade Retrieval-Augmented Generation (RAG) SaaS platform. It combines real-time document grounding search with an automated strict evaluation layer (faithfulness, relevance, precision, recall) and a modern admin analytics suite.
 
 ---
 
 ## Technical Stack & Architecture
 
 - **Frontend**: React (v19) + TypeScript + Vite + Tailwind CSS (v4)
-- **Backend**: FastAPI + SQLAlchemy (v2.0)
-- **Database**: PostgreSQL (Production) / SQLite (Development) + Alembic migrations
-- **Vector Database**: ChromaDB
-- **Evaluation Engine**: Parallel prompt evaluations modeled after DeepEval & Ragas scoring definitions
+- **Backend**: FastAPI + Python (3.10+)
+- **Database**: MongoDB (Production & Development)
+- **Vector Database**: ChromaDB (for high-dimensional vector embeddings)
+- **Evaluation Engine**: Parallel prompt evaluations modeled after DeepEval & Ragas definitions, powered by Groq (Llama 3.1) and Google Gemini for strict zero-hallucination tracking.
+- **LLM / Embedding**: Google Gemini (`models/gemini-embedding-001` or similar), optionally OpenAI.
 - **Deployment**: Docker + Docker Compose + Nginx proxying
+
+---
+
+## Features
+
+1. **Document Grounding**: Restrict context search to a single document or query all uploaded materials seamlessly.
+2. **Strict Evaluation Metrics (Zero-Hallucination)**: Faithfulness, Answer Relevance, Context Precision, and Context Recall are evaluated concurrently using `asyncio.gather`. The evaluation prompt enforces absolute strictness, punishing completely irrelevant context or hallucinated answers with 0% exact values, and displays integer-perfect metrics in the UI.
+3. **Structured Formatted Chat**: The UI flawlessly renders complex Markdown spacing, ordered lists, and neatly formatted paragraphs utilizing `whitespace-pre-wrap` styling.
+4. **Admin Analytics Dashboard**: Custom interactive SVG charts reporting request trends, average latency curves, hallucination percentages (where Faithfulness < 80%), and evaluation log details.
+5. **Persistent Storage**: Robust storage of vectors in ChromaDB and user records/history in MongoDB.
 
 ---
 
@@ -19,35 +30,23 @@ Enterprise RAG is a production-ready, enterprise-grade Retrieval-Augmented Gener
 
 ```text
 Final AI project/
-├── docker-compose.yml          # Full-stack orchestrator
+├── docker-compose.yml          # Full-stack orchestrator (if deploying via Docker)
 ├── backend/
 │   ├── app/
-│   │   ├── models/            # SQLAlchemy database schemas
-│   │   ├── routers/           # FastAPI routers (chat, documents, admin, auth)
-│   │   ├── schemas/           # Pydantic serialization models
-│   │   ├── services/          # RAG indexers, LLM client, EvaluationService
-│   │   ├── main.py            # API Server lifespan and routers registration
-│   │   └── database.py        # Connection pools and sessions factory
-│   ├── alembic/               # Database revisions migration control
-│   ├── requirements.txt       # Python libraries definition
-│   └── Dockerfile             # FastAPI service container file
+│   │   ├── models/            # Database schemas & Document mappings
+│   │   ├── routes/            # FastAPI routes (chat, admin, etc.)
+│   │   ├── evaluation/        # Ragas_eval.py for strict precision/recall metrics
+│   │   └── main.py            # API Server lifespan and routers registration
+│   ├── .env                   # Environment variables (MongoDB, Groq, Gemini keys)
+│   └── requirements.txt       # Python libraries definition
 └── frontend/
     ├── src/
-    │   ├── components/        # React components (AuthPage, etc.)
-    │   ├── App.tsx            # Main ChatGPT workspace & Admin analytics
-    │   └── index.css          # Tailwind CSS directives & custom fonts
-    ├── nginx.conf             # Nginx reverse proxy routing definition
-    └── Dockerfile             # Frontend React static compilation & server
+    │   ├── components/        # React components (Admin Dashboard, Chat)
+    │   ├── App.jsx            # Main ChatGPT workspace, Analytics & Metrics formatting
+    │   └── index.css          # Tailwind CSS directives (with formatting fixes)
+    ├── .env.example           # Frontend environment example
+    └── package.json           # React static compilation & server dependencies
 ```
-
----
-
-## Features
-
-1. **Document Grounding**: Restrict context search to a single document or query all uploaded materials.
-2. **Evaluation Metrics**: Faithfulness, Answer Relevance, Context Precision, Context Recall, and Latency are evaluated concurrently using `asyncio.gather` for minimal overhead. Evaluator rules strictly calculate exact percentage metrics for zero-hallucination tracking.
-3. **Admin Analytics Dashboard**: Custom interactive SVG charts (Line & Area) reporting request trends, average latency curves, hallucination percentage, and evaluation log details.
-4. **Persistent Volumes**: Named Local Docker mounts preserve vector indices, database records, and upload files.
 
 ---
 
@@ -56,6 +55,7 @@ Final AI project/
 ### Prerequisites
 - Node.js (v18+)
 - Python (3.10+)
+- MongoDB connection URI (e.g., MongoDB Atlas)
 
 ### 1. Setup Backend
 1. Open a terminal and enter the `backend` folder:
@@ -73,26 +73,22 @@ Final AI project/
 3. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
-   pip install deepeval
    ```
-4. Setup environment file `backend/.env` with your API keys:
+4. Setup environment file `backend/.env` with your API keys and MongoDB URL:
    ```env
    PORT=8000
    HOST=0.0.0.0
    ENVIRONMENT=development
-   DATABASE_URL=sqlite+aiosqlite:///./ragdb.sqlite
-   SECRET_KEY=enterprise-rag-secret-key-2024-super-secure-do-not-share
+   MONGODB_URL="mongodb+srv://<user>:<password>@cluster0.../ragdb"
+   DATABASE_NAME="ragdb"
+   SECRET_KEY="your-secure-secret-key"
    ALGORITHM=HS256
    ACCESS_TOKEN_EXPIRE_MINUTES=30
-   EMBEDDING_PROVIDER=openai
-   OPENAI_API_KEY=your_openai_key_here
-   GEMINI_API_KEY=your_gemini_key_here
+   EMBEDDING_PROVIDER=gemini
+   GEMINI_API_KEY="your_gemini_key_here"
+   GROQ_API_KEY="your_groq_key_here"
    ```
-5. Apply database migrations:
-   ```bash
-   alembic upgrade head
-   ```
-6. Start the API server:
+5. Start the API server:
    ```bash
    uvicorn app.main:app --reload
    ```
@@ -110,7 +106,7 @@ Final AI project/
    ```bash
    npm run dev
    ```
-4. Visit `http://localhost:5173`. Create an account (first registered user automatically gains the **Admin** role, giving access to the **Analytics Dashboard**).
+4. Visit `http://localhost:5173`. The first registered user automatically gains the **Admin** role, giving access to the **Analytics Dashboard**.
 
 ---
 
@@ -119,18 +115,17 @@ Final AI project/
 To deploy the entire multi-container architecture in production, run the following:
 
 1. Clone or open the project folder in your terminal.
-2. Edit `docker-compose.yml` to supply your `OPENAI_API_KEY` or `GEMINI_API_KEY` environmental keys for live generation.
+2. Edit `docker-compose.yml` to supply your `MONGODB_URL`, `GROQ_API_KEY`, and `GEMINI_API_KEY` environment variables for live generation and evaluation.
 3. Build and launch all services:
    ```bash
    docker-compose up --build -d
    ```
 4. Once completed:
-   - **Frontend App**: Accessible at [http://localhost](http://localhost) (Port 80)
-   - **Backend API**: Reverse proxied to [http://localhost/api](http://localhost/api) (Internal Port 8000)
-   - **Database**: PostgreSQL database internally connected on port 5432.
+   - **Frontend App**: Accessible at `http://localhost` (Port 80)
+   - **Backend API**: Reverse proxied to `http://localhost/api` (Internal Port 8000)
 
 To shutdown the system:
 ```bash
 docker-compose down
 ```
-All documents, user records, and database rows are persisted on your host machine inside local volume drivers (`pgdata`, `uploads_data`, and `chroma_data`).
+All documents and vector records are persisted according to your defined named volumes and remote MongoDB cluster settings.
